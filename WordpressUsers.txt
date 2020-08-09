@@ -1,0 +1,157 @@
+Hello everyone,
+
+Open Package Manager on visual studio to add MySql.data package and it is the easiest way to do. You don't need anything else to work with mysql database.
+
+PM> Install-Package MySql.Data
+
+And then include Mysql.data namespace inside your project.
+
+using MySql.Data.MySqlClient;
+
+Create a new c# in memory datatable:
+
+ System.Data.DataTable users_table = new DataTable();
+ 
+ Create an instance from  MySqlConnection object:
+ 
+  MySqlConnection mycon;
+  
+  
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Linq;
+using System.Text;
+using MySql.Data.MySqlClient;
+
+ public class WordPressUsers
+ {
+         
+  System.Data.DataTable users_table = new DataTable();
+  //
+  MySqlConnection mycon;
+  //
+  public WordPressUsers()
+        {
+           
+            //
+            users_table.Columns.Add("ID");
+            users_table.Columns.Add("user_login");
+            users_table.Columns.Add("user_pass");
+            users_table.Columns.Add("display_name");
+            //
+            users_table.Columns.Add("Role");
+            //
+            users_table.Columns.Add("user_email");
+            users_table.Columns.Add("joined_date");
+            //
+            //
+            //
+            this.Connect();
+        }
+        
+      void Connect()
+        {
+            try
+            {
+                string connectionString = "SERVER=" + "serverIP ; DATABASE=DBName ; UID=" + "userID" + ";" + "PASSWORD=" + "Password" + ";";
+                //
+                // you will find the active db name , username and pass inside wp_config.php file inside your wordpress cpanel 
+                //
+                //
+                mycon = new MySqlConnection(connectionString);
+                //
+                mycon.Open();
+                
+                //MessageBox.Show("successful connection");
+
+                //mycon.Close();
+            }
+            catch(MySqlException ex)
+            {
+
+                MessageBox.Show(ex.Message);
+            }
+        }
+       public datatable GetUsers()
+        {
+            //
+            // list all users from wp_users table
+            //
+            List<int> ids = new List<int>();
+            //
+            MySqlCommand my_comm = new MySqlCommand("SELECT * FROM wp_users");
+            //
+            my_comm.Connection = this.mycon;
+            //
+            MySqlDataReader my_sql_reader = my_comm.ExecuteReader();
+            //
+            while (my_sql_reader.Read())
+            {
+                //
+                DataRow rd = users_table.NewRow();
+                //
+                ids.Add(Convert.ToInt32(my_sql_reader["ID"].ToString()));
+                //
+                rd["ID"]= my_sql_reader["ID"].ToString();
+                //
+                //
+                rd["user_login"] = my_sql_reader["user_login"].ToString();
+                //
+                rd["user_pass"] = my_sql_reader["user_pass"].ToString();
+                //
+                rd["user_email"] = my_sql_reader["user_email"].ToString();
+                //
+                rd["display_name"] = my_sql_reader["display_name"].ToString();
+                //
+                rd["joined_date"] = my_sql_reader["user_registered"].ToString();
+                //
+                users_table.Rows.Add(rd);
+                //
+            }
+            //
+            my_sql_reader.Close();
+            //
+            // users Role exists inside wp_usermeta table 
+            //
+            if (ids.Count > 0)
+            {
+                //
+                int index = 0;
+                //
+                foreach (int id in ids) {
+
+                    my_comm.CommandText = "SELECT  meta_value FROM wp_usermeta WHERE user_id='" + id.ToString() + "' AND meta_key='wp_capabilities'";
+                    //
+                    my_sql_reader = my_comm.ExecuteReader();
+                    //
+                    while (my_sql_reader.Read())
+                    {
+                        //
+                        string capabilities = my_sql_reader["meta_value"].ToString();
+                        //
+                        string[] str1 = capabilities.Split(new string[] { "\"" },StringSplitOptions.RemoveEmptyEntries);
+                        //
+                        users_table.Rows[index]["Role"] = str1[1];
+                        //
+                    }
+                    //
+                    my_sql_reader.Close();
+                    //
+                    index++;
+                }
+            }
+            // 
+            //
+            // 
+            //
+            my_sql_reader.Close();
+            //
+            my_comm.Dispose();
+            //
+            return users_table;
+            //
+        }
+ 
+ } 
